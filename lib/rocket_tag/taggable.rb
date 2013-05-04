@@ -35,7 +35,7 @@ module RocketTag
         require 'csv'
         if list.kind_of? String
           # for some reason CSV parser cannot handle
-          #     
+          #
           #     hello, "foo"
           #
           # but must be
@@ -106,13 +106,13 @@ module RocketTag
       def tagged_similar options = {}
         context = options.delete :on
 
-        contexts = self.class.normalize_contexts context, 
+        contexts = self.class.normalize_contexts context,
           self.class.rocket_tag.contexts
 
-        q = self.class.tagged_with Hash[*contexts.map{|c| 
+        q = self.class.tagged_with Hash[*contexts.map{|c|
           [c, tags_for_context(c)]
         }.flatten(1)]
-       
+
         # Exclude self from the results
         q.where{id!=my{id}}
 
@@ -149,7 +149,7 @@ module RocketTag
       def validate_contexts contexts
         contexts.each do |context|
           unless is_valid_context? context
-            raise Exception.new("#{context} is not a valid tag context for #{self}") 
+            raise Exception.new("#{context} is not a valid tag context for #{self}")
           end
         end
       end
@@ -176,16 +176,16 @@ module RocketTag
       end
 
       def tagged_with tags_list, options = {}
- 
+
         # Grab table name
         t = self.table_name
-        
+
         q = joins{taggings.tag}
-        
-        alias_tag_names = lambda do |list| 
+
+        alias_tag_names = lambda do |list|
           names = RocketTag::Tag.select{:name}.where do
             id.in(RocketTag::Tag.select{'alias_tags.alias_id'}.joins(:alias).where{
-                tags.name.in(list) 
+                tags.name.in(list)
               })
           end
           names.map{|t| t.name}
@@ -229,17 +229,17 @@ module RocketTag
         # select * from ( ..... ) tags
         # remove `.arel` dependency
         q = from(q.as(self.table_name))
-        
+
         # Restrict by minimum tag counts if required
-        min = options.delete :min 
-        q = q.where{tags_count>=min} if min 
+        min = options.delete :min
+        q = q.where{tags_count>=min} if min
 
         # Require all the tags if required
         all, exact = options.delete(:all), options.delete(:exact)
         q = q.where{tags_count==tags_list.length} if all || exact
         q = q.joins{taggings.tag}.group("#{self.table_name}.id").having('COUNT(tags.id) = ?', tags_list.length) if exact
 
-        # Return the relation        
+        # Return the relation
         q
       end
 
@@ -269,10 +269,10 @@ module RocketTag
         # select * from ( ..... ) tags
         q = RocketTag::Tag.from(q.as(RocketTag::Tag.table_name))
         #q = RocketTag::Tag.from(q.arel.as(RocketTag::Tag.table_name))
-        
+
         # Restrict by minimum tag counts if required
-        min = options.delete :min 
-        q = q.where{tags_count>=min} if min 
+        min = options.delete :min
+        q = q.where{tags_count>=min} if min
 
         # Return the relation
         q
@@ -285,12 +285,14 @@ module RocketTag
         tags(options)
       end
 
-      def setup_for_rocket_tag
+      def setup_for_rocket_tag preload
         unless @setup_for_rocket_tag
           @setup_for_rocket_tag = true
           class_eval do
-            default_scope do
-              preload{taggings}.preload{tags}
+            if preload
+              default_scope do
+                preload{taggings}.preload{tags}
+              end
             end
 
             before_save do
@@ -308,7 +310,7 @@ module RocketTag
                 exisiting_tag_names = exisiting_tags.map &:name
 
                 # Find missing tags
-                tags_names_to_create = list - exisiting_tag_names 
+                tags_names_to_create = list - exisiting_tag_names
 
                 # Create missing tags
                 created_tags = tags_names_to_create.map do |tag_name|
@@ -319,9 +321,9 @@ module RocketTag
                 tags_to_assign = exisiting_tags + created_tags
 
                 tags_to_assign.each do |tag|
-                  tagging = Tagging.new :tag => tag, 
-                    :taggable => self, 
-                    :context => context, 
+                  tagging = Tagging.new :tag => tag,
+                    :taggable => self,
+                    :context => context,
                     :tagger => nil
                   self.taggings << tagging
                 end
@@ -332,58 +334,58 @@ module RocketTag
         end
       end
 
-      def attr_taggable *contexts
+      def attr_taggable context, options = {}
         unless class_variable_defined?(:@@acts_as_rocket_tag)
           include RocketTag::Taggable::InstanceMethods
           class_variable_set(:@@acts_as_rocket_tag, true)
           alias_method_chain :reload, :tags
         end
 
-        rocket_tag.contexts += contexts
+        preload = !!options[:preload]
 
-        setup_for_rocket_tag
+        rocket_tag.contexts += [context]
 
-        contexts.each do |context|
-          class_eval do
+        setup_for_rocket_tag preload
 
-            has_many "#{context}_taggings".to_sym, 
-              :source => :taggable,  
-              :as => :taggable,
-              :conditions => { :context => context }
+        class_eval do
 
-            has_many "#{context}_tags".to_sym,
-              :source => :tag,
-              :through => :taggings,
-              :conditions => [ "taggings.context = ?", context ]
+          has_many "#{context}_taggings".to_sym,
+            :source => :taggable,
+            :as => :taggable,
+            :conditions => { :context => context }
 
-            validate context do
-              if not send(context).kind_of? Enumerable
-                errors.add context, :invalid
-              end
+          has_many "#{context}_tags".to_sym,
+            :source => :tag,
+            :through => :taggings,
+            :conditions => [ "taggings.context = ?", context ]
+
+          validate context do
+            if not send(context).kind_of? Enumerable
+              errors.add context, :invalid
             end
+          end
 
-            # This is to compensate for a rails bug that returns
-            # a string for postgres
-            def tags_count
-              self[:tags_count].to_i
-            end
+          # This is to compensate for a rails bug that returns
+          # a string for postgres
+          def tags_count
+            self[:tags_count].to_i
+          end
 
-            # Return an array of RocketTag::Tags for the context
-            define_method "#{context}" do
-              cache_tags
-              tags_for_context(context)
-            end
+          # Return an array of RocketTag::Tags for the context
+          define_method "#{context}" do
+            cache_tags
+            tags_for_context(context)
+          end
 
-            define_method "#{context}=" do |list|
-              list = Manager.parse_tags list
+          define_method "#{context}=" do |list|
+            list = Manager.parse_tags list
 
-              # Ensure the tags are loaded
-              cache_tags
-              write_context(context, list)
+            # Ensure the tags are loaded
+            cache_tags
+            write_context(context, list)
 
-              (@tag_dirty ||= Set.new) << context
+            (@tag_dirty ||= Set.new) << context
 
-            end
           end
         end
       end
