@@ -307,7 +307,7 @@ module RocketTag
 
                 # Find existing tags
                 exisiting_tags = Tag.where{name.in(list)}
-                exisiting_tag_names = exisiting_tags.map &:name
+                exisiting_tag_names = exisiting_tags.map(&:name).uniq{|n| n.downcase}
 
                 # Find missing tags
                 tags_names_to_create = list.select do |new_tag|
