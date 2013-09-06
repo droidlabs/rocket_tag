@@ -310,7 +310,9 @@ module RocketTag
                 exisiting_tag_names = exisiting_tags.map &:name
 
                 # Find missing tags
-                tags_names_to_create = list - exisiting_tag_names
+                tags_names_to_create = list.select do |new_tag|
+                  !exisiting_tag_names.map(&:downcase).include?(new_tag.downcase)
+                end
 
                 # Create missing tags
                 created_tags = tags_names_to_create.map do |tag_name|
@@ -334,7 +336,7 @@ module RocketTag
         end
       end
 
-      def attr_taggable context, options = {}
+      def attr_taggable context = :tags, options = {}
         unless class_variable_defined?(:@@acts_as_rocket_tag)
           include RocketTag::Taggable::InstanceMethods
           class_variable_set(:@@acts_as_rocket_tag, true)

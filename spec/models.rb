@@ -6,7 +6,8 @@ class TaggableModel < ActiveRecord::Base
   attr_taggable
   attr_taggable :languages
   attr_taggable :skills
-  attr_taggable :needs, :offerings
+  attr_taggable :needs
+  attr_taggable :offerings
   has_many :untaggable_models
   belongs_to :user
 end
@@ -20,12 +21,16 @@ class CachedModel < ActiveRecord::Base
 end
 
 class OtherCachedModel < ActiveRecord::Base
-  attr_taggable :languages, :statuses, :glasses
+  attr_taggable :languages
+  attr_taggable :statuses
+  attr_taggable :glasses
 end
 
 class OtherTaggableModel < ActiveRecord::Base
-  attr_taggable :tags, :languages
-  attr_taggable :needs, :offerings
+  attr_taggable :tags
+  attr_taggable :languages
+  attr_taggable :needs
+  attr_taggable :offerings
 end
 
 class InheritingTaggableModel < TaggableModel
@@ -44,7 +49,8 @@ class NonStandardIdTaggableModel < ActiveRecord::Base
   attr_taggable
   attr_taggable :languages
   attr_taggable :skills
-  attr_taggable :needs, :offerings
+  attr_taggable :needs
+  attr_taggable :offerings
   has_many :untaggable_models
 end
 
