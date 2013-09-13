@@ -378,6 +378,7 @@ module RocketTag
             cache_tags
             tags_for_context(context)
           end
+          self.class.alias_method "#{context.singularize}_list", "#{context}"
 
           define_method "#{context}=" do |list|
             list = Manager.parse_tags list
@@ -387,8 +388,8 @@ module RocketTag
             write_context(context, list)
 
             (@tag_dirty ||= Set.new) << context
-
           end
+          self.class.alias_method "#{context.singularize}_list=", "#{context}="
         end
       end
     end
