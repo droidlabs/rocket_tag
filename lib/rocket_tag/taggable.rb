@@ -378,7 +378,6 @@ module RocketTag
             cache_tags
             tags_for_context(context)
           end
-          self.send :alias_method, "#{context.to_s.singularize}_list", "#{context}"
 
           define_method "#{context}=" do |list|
             list = Manager.parse_tags list
@@ -389,7 +388,14 @@ module RocketTag
 
             (@tag_dirty ||= Set.new) << context
           end
-          self.send :alias_method, "#{context.to_s.singularize}_list=", "#{context}="
+
+          # COMPATIBILITY METHODS
+          define_method "#{context.to_s.singularize}_list" do
+            send(:"#{context}").join(',')
+          end
+          define_method "#{context.to_s.singularize}_list=" do |value|
+            send(:"#{context}=", value.to_s.split(',').map(&:strip))
+          end
         end
       end
     end
